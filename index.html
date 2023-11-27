@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utilidad</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        table {
+            width: 475px; 
+            height: 150px;
+            margin: 0px auto;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 5px;
+        }
+        input {
+            width: 50px;
+            text-align: center;
+        }
+        input[type="submit"]{
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            height: 40px;
+            line-height: 40px;
+        }
+        input[type="button"] {
+            background-color: blue;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            height: 30px;
+            width: 120px;
+            line-height: 30px;
+        }
+        button.personalizado {
+            background-color: green;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            height: 30px;
+            width: 80px;
+            line-height: 30px;
+        }
+        th input[type="text"],
+        td input[type="text"],
+        th input[type="number"],
+        td input[type="number"] {
+            width: 100%;
+            height: 50px;
+            box-sizing: border-box; 
+        }
+        canvas {
+            margin: 0;
+            padding: 0;
+        }
+        #matrizProbabilidades {
+            width: 200px; /* ancho */
+            height: 80px; /* altura */
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+
+        #matrizProbabilidades th,
+        #matrizProbabilidades td {
+            border: 1px solid #ccc;
+            padding: 5px;
+        }
+
+        #matrizProbabilidades input {
+            width: 100%;
+            height: 40px; 
+            box-sizing: border-box;
+            text-align: center;
+        }
+        h2 {
+            font-size: 20px; /*  tamaño de la letra del titulo h2 */
+        }
+    </style>
+</head>
+<body>
+    <h1>Ingresa valores</h1>
+    <form method="post" action="" id="formValores">
+        <table id="matrizValores">
+            <tr>
+                <th><input type="text" name="name[0]" placeholder="alternativas/estados de la naturaleza" required disabled></th>
+                <td><input type='text' name='num[0][0]' placeholder="N1" required disabled></td>
+            </tr>
+            <tr>
+                <th><input type="text" name="name[1]" placeholder="A1" required disabled></th>
+                <td><input type='number' name='num[1][0]' required></td>
+            </tr>
+        </table>
+        <br>
+    </form>
+
+    <h1>Ingresa utilidades</h1>
+    <form method="post" action="" id="formUtilidades" novalidate>
+        <table id="matrizUtilidades">
+            <tr>
+                <th><input type="text" name="name[0]" placeholder="alternativas/estados de la naturaleza" required disabled></th>
+                <td><input type='text' name='num[0][0]' placeholder="N1" required disabled></td>
+            </tr>
+            <tr>
+                <th><input type="text" name="name[1]" placeholder="A1" required disabled></th>
+                <td><input type='number' name='num[1][0]' required></td>
+            </tr>
+        </table>
+        <br>
+   
+    </form>
+
+    <h2>Ingresa probabilidad de cada estado de la naturaleza (opcional)</h2>
+    <form method="post" action="" id="formProbabilidades">
+        <table id="matrizProbabilidades">
+            <tr>
+                <th><input type="text" name="name[0]" placeholder="N1" required disabled></th>
+            </tr>
+            <tr>
+                <td><input type='number' name='num[1]' required></td>
+            </tr>
+        </table>
+        <br>
+        <input type="button" value="Agregar Fila" onclick="agregarFila()">
+        <input type="button" value="Agregar Columna" onclick="agregarColumna()"><br><br>
+        <input type="button" value="Eliminar Fila" onclick="eliminarFila()">
+        <input type="button" value="Eliminar Columna" onclick="eliminarColumna()"><br><br>
+        <!--<button onclick="obtenerDatos()" class="personalizado">resolver</button>-->
+        <button type="button" onclick="obtenerDatos()" class="personalizado">resolver</button>
+    </form>  
+
+    <div style="display: flex; justify-content: center; align-items: center;">
+        <canvas id="myChart" width="400" height="400"></canvas>
+        <div id="textoAdicional"></div>
+    </div>
+
+    <div id="output"></div>
+
+    <script>
+
+        function obtenerDatos() {
+            var MV = document.getElementById("matrizValores");
+            var MU = document.getElementById("matrizUtilidades");
+            var MP = document.getElementById("matrizProbabilidades");
+
+            var valores = [];
+            var utilidades = [];
+            var indiferencia = [];
+            var probabilidades = [];
+
+            for (var i = 0; i < MV.rows.length; i++) {
+                var filaMV = MV.rows[i];
+                var filaMU = MU.rows[i];
+
+                for (var j = 0; j < filaMV.cells.length; j++) {
+                    var celdaMV = filaMV.cells[j];
+                    var celdaMU = filaMU.cells[j];
+                    
+                    var inputMV = celdaMV.querySelector("input[type='number']");
+                    var inputMU = celdaMU.querySelector("input[type='number']");
+
+                    if (inputMV) {
+                        valores.push(inputMV.value);
+                    }
+                    if (inputMU) {
+                        utilidades.push(inputMU.value);
+                    }
+                    
+                    if (i == 1){
+                        var celdaMP = MP.rows[1].cells[j];
+                        if (celdaMP) {
+                            var inputMP = celdaMP.querySelector("input[type='number']");
+                            if (inputMP) {
+                                probabilidades.push(inputMP.value);
+                            }
+                            else{
+                                probabilidades.push(null);
+                            }
+                        }
+                    }
+                }
+            }
+
+            valores.sort(function(a, b) {
+                return a - b;
+            });
+            utilidades.sort(function(a, b) {
+                return a - b;
+            });
+            console.log("valores y utilidades:");
+            console.log(valores);
+            console.log(utilidades);
+            console.log("probabilidades:");
+            console.log(probabilidades);
+            eliminarRepetidos(valores,utilidades)
+            obtenerDatosIndiferencia(valores,indiferencia);
+            console.log("valores y utilidades despues de eliminar repetidos:");
+            console.log(valores);
+            console.log(utilidades);
+            console.log("valores de indiferencia:");
+            console.log(indiferencia);
+            generarGrafico(valores,utilidades,indiferencia,probabilidades);
+            definirRiesgo(valores,utilidades,indiferencia,probabilidades);//podria hacer invocacion desde generar grafico
+        }
+
+        function eliminarRepetidos(valores,utilidades) {
+            var posiciones = []; //contienes las posiciones de los elementos que hay que eliminar
+            for(let i = 0; i < valores.length; i++){
+                if(i>0){
+                    if(valores[i] == valores[i-1]){
+                        posiciones.push(i);
+                    }
+                }
+            }
+            for(let i = 0; i < posiciones.length; i++){
+                // eliminar un solo elemento a partir de la posicion posiciones[i]-i
+                valores.splice(posiciones[i]-i, 1);
+                utilidades.splice(posiciones[i]-i, 1);
+            }
+            console.log("posiciones a eliminar:");
+            console.log(posiciones);
+        }
+
+        function definirRiesgo(valores,utilidades,indiferencia,probabilidades) {
+            let adverso = 2;//por el primer punto y el ultimo
+            let propenso = 2;//idem ant
+            let indiferente = 0;
+
+            for(let i = 0; i < utilidades.length; i++){
+                if(utilidades[i] == indiferencia[i]){
+                    indiferente = indiferente + 1;
+                    console.log("indiferente:");
+                    console.log(indiferente)
+                }
+                if(utilidades[i] > indiferencia[i]){
+                    adverso = adverso + 1;
+                    console.log("adverso:");
+                    console.log(adverso);
+                }
+                if(utilidades[i] < indiferencia[i]){
+                    console.log("propenso:");
+                    propenso = propenso + 1;
+                    console.log(propenso);
+                }
+            }
+
+            var outputDiv = document.getElementById("output");
+            if(!probabilidades.includes('')){
+                outputDiv.style.textAlign = 'left';
+            }
+            outputDiv.innerHTML = "";
+
+            var nuevoParrafo = document.createElement("p");
+
+            if(indiferente == utilidades.length){
+                nuevoParrafo.textContent = "El individuo es indiferente al riesgo";
+            }
+            else if(adverso == utilidades.length){
+                nuevoParrafo.textContent = "El individuo es adverso al riesgo";
+            }
+            else if(propenso == utilidades.length){
+                nuevoParrafo.textContent = "El individuo es propenso al riesgo";
+            }
+            else{
+                var mensaje = [];
+                for(let i = 0; i < utilidades.length; i++){
+                    if(utilidades[i] == indiferencia[i]){
+                        mensaje.push("Para el valor "+valores[i]+": el individuo es indiferente al riesgo ");
+                    }
+                    if(utilidades[i] > indiferencia[i]){
+                        mensaje.push("Para el valor "+valores[i]+": el individuo es adverso al riesgo ");
+                    }
+                    if(utilidades[i] < indiferencia[i]){
+                        mensaje.push("Para el valor "+valores[i]+": el individuo es propenso al riesgo ");
+                    }
+                }
+                nuevoParrafo.innerHTML = mensaje.join("<br>");
+            }
+            outputDiv.appendChild(nuevoParrafo);
+
+        }
+        
+
+        function obtenerDatosIndiferencia(valores,indiferencia) {
+
+            let maxValor = Math.max(...valores);
+            //console.log(maxValor);
+            let minValor = Math.min(...valores);
+            //console.log(minValor);
+            for (let i = 0; i < valores.length; i++) {
+                var valorIndiferencia = (valores[i] - minValor)/(maxValor - minValor);
+                indiferencia.push(valorIndiferencia);
+            }
+
+        }
+
+        function generarGrafico(valores, utilidades, indiferencia, probabilidades) {
+            var ctx = document.getElementById('myChart').getContext('2d');
+
+            var existingChart = Chart.getChart(ctx);
+
+            if (existingChart) {
+                existingChart.destroy();
+            }
+
+            var data = {
+                labels: valores,
+                datasets: [
+                    {
+                    label: 'curva utilidad',
+                    data: utilidades,
+                    fill: false,
+                    borderColor: 'blue'
+                    },
+                    {
+                    label: 'recta indiferencia',
+                    data: indiferencia,
+                    fill: false,
+                    borderColor: 'red'
+                    }
+                ]
+            };
+            
+            var myChart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false, 
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'valores monetarios'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'utilidades'
+                            }
+                        }
+                    }
+                }
+            });
+
+            if(!probabilidades.includes('')){
+                calcularValoresEsperados(probabilidades);
+            }
+            else{
+                document.getElementById('textoAdicional').innerText = "";
+            }
+        }
+
+        function calcularValoresEsperados(probabilidades){
+            
+            // agregar texto al lado del grafico
+            var texto1 = [];
+            var texto2 = [];
+            var MV = document.getElementById("matrizValores");
+            var MU = document.getElementById("matrizUtilidades");
+
+            var maxValorEsperado = 0;
+            var maxUtilidadEsperada = 0;
+            var alternativa = "";
+            var alternativaVE = "";
+            var alternativaUE = "";
+
+            //recorrer filas
+            for (var i = 1; i < MV.rows.length; i++) {
+                var filaMV = MV.rows[i];
+                var filaMU = MU.rows[i];
+                var valorEsperado = 0;
+                var utilidadEsperada = 0;
+                //recorrer columnas
+                for (var j = 1; j < filaMV.cells.length; j++) {
+                    var celdaMV = filaMV.cells[j];
+                    var celdaMU = filaMU.cells[j];
+                    
+                    var inputMV = celdaMV.querySelector("input[type='number']");
+                    var inputMU = celdaMU.querySelector("input[type='number']");
+
+                    if (inputMV) {
+                        valorEsperado += inputMV.value*probabilidades[j-1];
+                    }
+                    if (inputMU) {
+                        utilidadEsperada += inputMU.value*probabilidades[j-1];
+                    }
+                }
+                alternativa = "A"+i;
+                texto1.push("- El valor esperado para "+alternativa+" es: "+valorEsperado);
+                texto2.push("- La utilidad esperada para A"+i+" es: "+utilidadEsperada);
+                if(valorEsperado > maxValorEsperado){
+                    maxValorEsperado = valorEsperado;
+                    alternativaVE = alternativa;
+                }
+                if(utilidadEsperada > maxUtilidadEsperada){
+                    maxUtilidadEsperada = utilidadEsperada;
+                    alternativaUE = alternativa;
+                }
+
+            }
+            texto1.push("");
+            texto2.push("");
+            console.log(texto1);
+            console.log(texto2);
+            texto1.push("La decisión que maximiza el rendimiento esperado es la alternativa "+alternativaVE+"("+maxValorEsperado+")");
+            texto2.push("La elección del tomador de decisiones es "+alternativaUE+" ya que es la opción que maximiza su utilidad esperada: "+maxUtilidadEsperada);
+            texto1.push("");
+            var texto = texto1.concat(texto2);
+            console.log(texto);
+            document.getElementById('textoAdicional').style.textAlign = 'left';
+            document.getElementById('textoAdicional').innerText = texto.join("\n");
+        }
+
+        function agregarFila() {
+            var matrizValores = document.getElementById("matrizValores");
+            var matrizUtilidades = document.getElementById("matrizUtilidades");
+
+            var rowMV = matrizValores.insertRow(-1);
+            var rowMU = matrizUtilidades.insertRow(-1);
+
+            var numeroDeFilas = matrizValores.rows.length - 1;
+            var numeroAlternativa = 'A'+ numeroDeFilas;
+
+            var textCellMV = rowMV.insertCell(0);
+            var textCellMU = rowMU.insertCell(0);
+
+            textCellMV.innerHTML = "<input type='text' name='name[" + rowMV.rowIndex + "]' placeholder='"+numeroAlternativa+"' required>";
+            textCellMU.innerHTML = "<input type='text' name='name[" + rowMU.rowIndex + "]' placeholder='"+numeroAlternativa+"' required>";
+
+            textCellMV.querySelector("input").disabled = true;
+            textCellMU.querySelector("input").disabled = true;
+
+            for (var i = 1; i < matrizValores.rows[0].cells.length; i++) {
+                var cellMV = rowMV.insertCell(i);
+                var cellMU = rowMU.insertCell(i);
+                
+                cellMV.innerHTML = "<input type='number' name='num[" + rowMV.rowIndex + "][" + i + "]' required>";
+                cellMU.innerHTML = "<input type='number' name='num[" + rowMU.rowIndex + "][" + i + "]' required>";
+            }
+        }
+
+        function agregarColumna() {
+            var matrizValores = document.getElementById("matrizValores");
+            var matrizUtilidades = document.getElementById("matrizUtilidades");
+            var matrizProbabilidades = document.getElementById("matrizProbabilidades");
+
+            matrizValores.rows[0].cells[0].style.width = 'auto';
+            matrizUtilidades.rows[0].cells[0].style.width = 'auto';
+            matrizProbabilidades.rows[0].cells[0].style.width = 'auto';
+
+            var numeroDeColumnas = matrizValores.rows[0].cells.length;
+
+            var numeroEstado = 'N'+ numeroDeColumnas;
+
+            var cellMV = matrizValores.rows[0].insertCell(-1);
+            var cellMU = matrizUtilidades.rows[0].insertCell(-1);
+            var cellMP = matrizProbabilidades.rows[0].insertCell(-1);
+
+            cellMV.innerHTML = "<input type='text' name='name[" + (matrizValores.rows.length - 1) + "]' placeholder='"+numeroEstado+"' required>";
+            cellMU.innerHTML = "<input type='text' name='name[" + (matrizUtilidades.rows.length - 1) + "]' placeholder='"+numeroEstado+"' required>";
+            cellMP.innerHTML = "<input type='text' name='name[" + (matrizProbabilidades.rows.length - 1) + "]' placeholder='"+numeroEstado+"' required>";
+
+            cellMV.querySelector("input").disabled = true;
+            cellMU.querySelector("input").disabled = true;
+            cellMP.querySelector("input").disabled = true;
+
+            for (var i = 1; i < matrizValores.rows.length; i++) {
+                var cellMV = matrizValores.rows[i].insertCell(-1);
+                var cellMU = matrizUtilidades.rows[i].insertCell(-1);
+                cellMV.innerHTML = "<input type='number' name='num[" + i + "][" + (matrizValores.rows[i].cells.length - 1) + "]' required>";
+                cellMU.innerHTML = "<input type='number' name='num[" + i + "][" + (matrizUtilidades.rows[i].cells.length - 1) + "]' required>";
+                if(i == 1){
+                    var cellMP = matrizProbabilidades.rows[i].insertCell(-1);
+                    cellMP.innerHTML = "<input type='number' name='num[" + i + "][" + (matrizProbabilidades.rows[i].cells.length - 1) + "]' required>";
+                }
+            }
+        }
+
+        function eliminarFila() {
+            var matrizValores = document.getElementById("matrizValores");
+            var matrizUtilidades = document.getElementById("matrizUtilidades");
+
+            if (matrizValores.rows.length > 2) {
+                matrizValores.deleteRow(-1);
+                matrizUtilidades.deleteRow(-1);
+            } else {
+                alert("No puedes eliminar más filas.");
+            }
+        }
+
+        function eliminarColumna() {
+            var matrizValores = document.getElementById("matrizValores");
+            var matrizUtilidades = document.getElementById("matrizUtilidades");
+            var matrizProbabilidades = document.getElementById("matrizProbabilidades");
+
+            if (matrizValores.rows[0].cells.length > 2) {
+                for (var i = 0; i < matrizValores.rows.length; i++) {
+                    matrizValores.rows[i].deleteCell(-1);
+                    matrizUtilidades.rows[i].deleteCell(-1);
+                }
+                matrizProbabilidades.rows[0].deleteCell(-1);//siempre tiene dos filas
+                matrizProbabilidades.rows[1].deleteCell(-1);
+            } else {
+                alert("No puedes eliminar más columnas.");
+            }
+        }
+
+    //deberia agregar?:
+    //eliminar fila y columna
+    //lo de valor esperado
+    </script>
+</body>
+</html>
+
+
+
